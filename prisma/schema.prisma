@@ -1,0 +1,1029 @@
+// =============================================================================
+// CFO Family Finance App — Prisma Database Schema
+// Version: 1.0.0
+// Database: PostgreSQL (via Supabase)
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum FamilyRole {
+  OWNER   // Người tạo gia đình, quyền tối cao
+  ADMIN   // Vợ/Chồng, quyền đầy đủ
+  MEMBER  // Thành viên, xem + nhập liệu
+  CHILD   // Con cái, chỉ xem một số tài khoản được phép
+}
+
+enum FamilyMemberStatus {
+  ACTIVE
+  INVITED    // Chưa chấp nhận lời mời
+  SUSPENDED  // Tạm khóa
+}
+
+enum AccountType {
+  CASH           // Tiền mặt ví
+  BANK_ACCOUNT   // Tài khoản ngân hàng (ATM)
+  CREDIT_CARD    // Thẻ tín dụng (Liability)
+  SAVINGS        // Tài khoản tiết kiệm
+  INVESTMENT     // Tài khoản đầu tư
+  E_WALLET       // Ví điện tử (MoMo, ZaloPay, VNPay)
+  LOAN           // Khoản vay (Liability)
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+  CREDIT_PAYMENT  // Thanh toán dư nợ thẻ tín dụng
+  DEBT_PAYMENT    // Trả khoản vay
+}
+
+enum RecurringFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum DebtType {
+  MORTGAGE       // Vay mua nhà
+  CAR_LOAN       // Vay mua xe
+  PERSONAL_LOAN  // Vay tín chấp cá nhân
+  STUDENT_LOAN   // Vay học bổng/học phí
+  FAMILY_DEBT    // Vay mượn trong gia đình/bạn bè
+  OTHER
+}
+
+enum DebtRepaymentStrategy {
+  SNOWBALL   // Trả khoản nhỏ nhất trước
+  AVALANCHE  // Trả lãi suất cao nhất trước
+  CUSTOM     // Tùy chỉnh
+}
+
+enum InvestmentType {
+  STOCK          // Cổ phiếu
+  FUND           // Quỹ đầu tư
+  BOND           // Trái phiếu
+  SAVINGS_TERM   // Tiết kiệm có kỳ hạn
+  FIXED_DEPOSIT  // Tiền gửi cố định
+  CRYPTO         // Tiền mã hóa
+  REAL_ESTATE    // Bất động sản
+  GOLD           // Vàng
+  OTHER
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  PUSH
+  ZALO
+  TELEGRAM
+}
+
+enum NotificationType {
+  BUDGET_WARNING         // Ngân sách sắp hết (80%)
+  BUDGET_EXCEEDED        // Ngân sách vượt (100%+)
+  BILL_DUE               // Hóa đơn sắp đến hạn
+  CREDIT_DUE             // Thẻ tín dụng sắp đến ngày sao kê
+  CREDIT_PAYMENT_DUE     // Thẻ tín dụng đến hạn thanh toán
+  DEBT_PAYMENT_DUE       // Kỳ trả nợ sắp đến
+  SAVINGS_GOAL_REACHED   // Đạt mục tiêu tiết kiệm
+  LARGE_TRANSACTION      // Giao dịch lớn bất thường
+  RECURRING_FAILED       // Giao dịch tự động thất bại
+  FAMILY_ACTIVITY        // Thành viên gia đình vừa nhập giao dịch
+  LOW_BALANCE            // Số dư tài khoản thấp
+  SYSTEM                 // Thông báo hệ thống
+}
+
+enum OcrStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REJECTED  // User từ chối kết quả OCR
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  COMPLETED_WITH_ERRORS
+  FAILED
+}
+
+enum ImportRowStatus {
+  PENDING
+  IMPORTED
+  DUPLICATE  // Giao dịch trùng lặp, bỏ qua
+  SKIPPED    // User chủ động bỏ qua
+  FAILED
+}
+
+// =============================================================================
+// USERS & AUTHENTICATION
+// =============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  phone     String?  @unique
+
+  // Localization
+  locale    String   @default("vi")
+  timezone  String   @default("Asia/Ho_Chi_Minh")
+  currency  String   @default("VND")
+
+  // Security
+  pinHash   String?  // 6-digit PIN hash for quick access
+  isBiometricEnabled Boolean @default(false)
+
+  // External Auth (NextAuth)
+  emailVerified DateTime?
+  image         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts              Account[]
+  familyMemberships     FamilyMember[]
+  transactions          Transaction[]
+  recurringTransactions RecurringTransaction[]
+  notifications         Notification[]
+  notificationSettings  NotificationSetting[]
+  ocrReceipts           OcrReceipt[]
+  bankImports           BankImport[]
+  auditLogs             AuditLog[]
+  sessions              UserSession[]
+
+  @@index([email])
+}
+
+// OAuth / Credentials session tracking
+model UserSession {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique
+  deviceInfo String?
+  ipAddress  String?
+  userAgent  String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// NextAuth required tables
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// =============================================================================
+// FAMILY WORKSPACE
+// =============================================================================
+
+model Family {
+  id        String   @id @default(cuid())
+  name      String
+  avatarUrl String?
+  currency  String   @default("VND")
+  locale    String   @default("vi-VN")
+
+  // Settings
+  settings  Json?    // { monthStartDay: 1, weekStartDay: 1, ... }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  members               FamilyMember[]
+  financialAccounts     FinancialAccount[]
+  categories            Category[]
+  transactions          Transaction[]
+  recurringTransactions RecurringTransaction[]
+  budgets               Budget[]
+  debts                 Debt[]
+  investments           Investment[]
+  savingsGoals          SavingsGoal[]
+  netWorthSnapshots     NetWorthSnapshot[]
+  healthScores          FinancialHealthScore[]
+  tags                  Tag[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  bankImports           BankImport[]
+  ocrReceipts           OcrReceipt[]
+  peerComparisonGroups  PeerComparisonGroup[]
+
+  @@index([name])
+}
+
+model FamilyMember {
+  id       String             @id @default(cuid())
+  familyId String
+  userId   String
+  role     FamilyRole         @default(MEMBER)
+  status   FamilyMemberStatus @default(INVITED)
+
+  // Permissions override cho CHILD
+  allowedAccountIds String[]  // Chỉ xem các tài khoản này
+  canAddTransaction Boolean   @default(true)
+  canViewReports    Boolean   @default(false)
+
+  invitedAt DateTime           @default(now())
+  joinedAt  DateTime?
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, userId])
+  @@index([familyId])
+  @@index([userId])
+}
+
+// =============================================================================
+// FINANCIAL ACCOUNTS (Tài khoản tài chính)
+// Đặt tên FinancialAccount để tránh conflict với NextAuth Account
+// =============================================================================
+
+model FinancialAccount {
+  id       String      @id @default(cuid())
+  familyId String
+  name     String
+  type     AccountType
+
+  // Balance
+  currency String  @default("VND")
+  balance  Decimal @default(0) @db.Decimal(18, 2)
+
+  // Credit Card specifics
+  creditLimit     Decimal? @db.Decimal(18, 2)
+  statementDay    Int?     // Ngày sao kê (1-31)
+  paymentDueDays  Int?     // Số ngày ân hạn sau sao kê (thường 15-25)
+  interestRate    Decimal? @db.Decimal(6, 4) // Lãi suất năm (e.g., 0.2400 = 24%)
+  minimumPayment  Decimal? @db.Decimal(18, 2)
+  gracePeriodDays Int?     @default(45)      // Số ngày miễn lãi
+
+  // Bank details
+  bankName      String?
+  accountNumber String?  // Chỉ lưu 4 số cuối
+  branchName    String?
+
+  // Display
+  icon          String?
+  color         String?  @default("#6366f1")
+  sortOrder     Int      @default(0)
+
+  // Flags
+  isActive       Boolean  @default(true)
+  includeInTotal Boolean  @default(true)   // Tính vào tổng tài sản
+  isShared       Boolean  @default(false)  // Tài khoản chung vợ chồng
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  transactions         Transaction[] @relation("SourceAccount")
+  transferTransactions Transaction[] @relation("TransferDestAccount")
+  debts                Debt[]
+  investments          Investment[]
+
+  @@index([familyId])
+  @@index([type])
+  @@index([isActive])
+}
+
+// =============================================================================
+// CATEGORIES (Danh mục thu/chi)
+// =============================================================================
+
+model Category {
+  id       String       @id @default(cuid())
+  familyId String?      // null = danh mục hệ thống mặc định
+  name     String
+  type     CategoryType
+  icon     String?
+  color    String?
+  parentId String?
+
+  // Meta
+  isDefault Boolean @default(false)
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  // Self-referential (danh mục cha/con)
+  family   Family?    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  parent   Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children Category[] @relation("SubCategories")
+
+  transactions          Transaction[]
+  recurringTransactions RecurringTransaction[]
+  budgets               Budget[]
+
+  @@unique([familyId, name, type])
+  @@index([familyId])
+  @@index([type])
+  @@index([parentId])
+}
+
+// =============================================================================
+// TRANSACTIONS (Giao dịch)
+// =============================================================================
+
+model Transaction {
+  id       String          @id @default(cuid())
+  familyId String
+  sourceAccountId String
+  categoryId      String?
+  userId          String
+
+  type   TransactionType
+  amount Decimal         @db.Decimal(18, 2)
+
+  // Multi-currency support
+  currency             String   @default("VND")
+  exchangeRate         Decimal? @db.Decimal(10, 6)
+  amountInBaseCurrency Decimal? @db.Decimal(18, 2)
+
+  description String?
+  date        DateTime
+  location    String?
+  receiptUrl  String?
+
+  // Status flags
+  isPending      Boolean @default(false)   // Thẻ tín dụng chưa sao kê
+  isReconciled   Boolean @default(false)   // Đã đối soát sổ sách
+  isExcluded     Boolean @default(false)   // Loại khỏi thống kê (hoàn tiền, nội bộ)
+
+  // Transfer fields
+  destAccountId String?  // Tài khoản đích khi chuyển tiền
+  transferFee   Decimal? @db.Decimal(18, 2)
+
+  // Foreign keys for special transactions
+  recurringId           String?
+  debtPaymentId         String?
+  savingsContributionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  family       Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  sourceAccount FinancialAccount @relation("SourceAccount", fields: [sourceAccountId], references: [id])
+  destAccount  FinancialAccount? @relation("TransferDestAccount", fields: [destAccountId], references: [id])
+  category     Category?        @relation(fields: [categoryId], references: [id])
+  user         User             @relation(fields: [userId], references: [id])
+  recurring    RecurringTransaction? @relation(fields: [recurringId], references: [id])
+
+  transactionTags     TransactionTag[]
+  debtPayment         DebtPayment?          @relation(fields: [debtPaymentId], references: [id])
+  savingsContribution SavingsContribution?  @relation(fields: [savingsContributionId], references: [id])
+
+  @@index([familyId])
+  @@index([sourceAccountId])
+  @@index([categoryId])
+  @@index([userId])
+  @@index([date])
+  @@index([type])
+  @@index([recurringId])
+  @@index([isPending])
+  // Composite index cho queries phổ biến
+  @@index([familyId, date])
+  @@index([familyId, type, date])
+}
+
+// =============================================================================
+// RECURRING TRANSACTIONS (Giao dịch lặp lại)
+// =============================================================================
+
+model RecurringTransaction {
+  id              String             @id @default(cuid())
+  familyId        String
+  sourceAccountId String
+  categoryId      String?
+  userId          String
+
+  type        TransactionType
+  amount      Decimal             @db.Decimal(18, 2)
+  description String?
+  frequency   RecurringFrequency
+
+  startDate DateTime
+  endDate   DateTime?
+  nextDate  DateTime  // Ngày sẽ tạo giao dịch tiếp theo
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family        Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  category      Category?        @relation(fields: [categoryId], references: [id])
+  user          User             @relation(fields: [userId], references: [id])
+  transactions  Transaction[]
+
+  @@index([familyId])
+  @@index([nextDate])
+  @@index([isActive])
+}
+
+// =============================================================================
+// BUDGETS (Ngân sách)
+// =============================================================================
+
+model Budget {
+  id          String   @id @default(cuid())
+  familyId    String
+  categoryId  String
+
+  amount      Decimal  @db.Decimal(18, 2)
+  currency    String   @default("VND")
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Tự động chuyển phần dư sang tháng tiếp theo
+  rollover     Boolean @default(false)
+  rolloverAmount Decimal? @db.Decimal(18, 2)
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family   Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+  alerts   BudgetAlert[]
+
+  @@unique([familyId, categoryId, periodStart])
+  @@index([familyId])
+  @@index([periodStart, periodEnd])
+}
+
+model BudgetAlert {
+  id               String   @id @default(cuid())
+  budgetId         String
+  thresholdPercent Int      // 50, 80, 90, 100, 110
+
+  isTriggered Boolean   @default(false)
+  triggeredAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  budget Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  @@unique([budgetId, thresholdPercent])
+  @@index([budgetId])
+}
+
+// =============================================================================
+// DEBT MANAGEMENT (Quản lý nợ)
+// =============================================================================
+
+model Debt {
+  id       String   @id @default(cuid())
+  familyId String
+  accountId String?  // Tài khoản liên kết (nếu có)
+
+  name            String
+  type            DebtType
+  lenderName      String?
+
+  // Số tiền
+  originalAmount  Decimal  @db.Decimal(18, 2)  // Gốc vay ban đầu
+  currentBalance  Decimal  @db.Decimal(18, 2)  // Dư nợ hiện tại
+  interestRate    Decimal  @db.Decimal(6, 4)   // Lãi suất năm
+  monthlyPayment  Decimal  @db.Decimal(18, 2)  // Kỳ trả hàng tháng
+
+  startDate DateTime
+  endDate   DateTime?
+  nextDueDate DateTime? // Kỳ trả nợ tiếp theo
+
+  strategy  DebtRepaymentStrategy @default(AVALANCHE)
+  notes     String?
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family   Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  account  FinancialAccount? @relation(fields: [accountId], references: [id])
+  payments DebtPayment[]
+
+  @@index([familyId])
+  @@index([isActive])
+  @@index([nextDueDate])
+}
+
+model DebtPayment {
+  id            String   @id @default(cuid())
+  debtId        String
+
+  paymentAmount    Decimal @db.Decimal(18, 2)
+  principalPortion Decimal @db.Decimal(18, 2)  // Phần trả gốc
+  interestPortion  Decimal @db.Decimal(18, 2)  // Phần trả lãi
+  balanceAfter     Decimal @db.Decimal(18, 2)  // Dư nợ sau khi trả
+
+  paymentDate DateTime
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  debt         Debt          @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([debtId])
+  @@index([paymentDate])
+}
+
+// =============================================================================
+// INVESTMENT PORTFOLIO (Danh mục đầu tư)
+// =============================================================================
+
+model Investment {
+  id       String         @id @default(cuid())
+  familyId String
+  accountId String?
+
+  name          String
+  symbol        String?         // Mã chứng khoán (VNM, VCB...)
+  type          InvestmentType
+
+  // Giá trị
+  purchaseAmount Decimal  @db.Decimal(18, 2)
+  currentValue   Decimal  @db.Decimal(18, 2)
+  quantity       Decimal? @db.Decimal(18, 8)  // Số lượng đơn vị
+  purchasePrice  Decimal? @db.Decimal(18, 4)  // Giá mua/đơn vị
+  currency       String   @default("VND")
+
+  // Thời gian
+  purchaseDate DateTime
+  maturityDate DateTime?  // Ngày đáo hạn (tiết kiệm có kỳ hạn)
+
+  // Tiết kiệm có kỳ hạn
+  interestRate       Decimal? @db.Decimal(6, 4)
+  expectedReturn     Decimal? @db.Decimal(18, 2)
+
+  institution String?   // Ngân hàng, công ty chứng khoán
+  notes       String?
+  isActive    Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family     Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  account    FinancialAccount? @relation(fields: [accountId], references: [id])
+  valuations InvestmentValuation[]
+
+  @@index([familyId])
+  @@index([type])
+  @@index([isActive])
+}
+
+model InvestmentValuation {
+  id           String   @id @default(cuid())
+  investmentId String
+
+  value         Decimal  @db.Decimal(18, 2)
+  quantity      Decimal? @db.Decimal(18, 8)
+  pricePerUnit  Decimal? @db.Decimal(18, 4)
+  valuationDate DateTime
+  source        String?  // "manual", "api_vnstock", "api_coinbase"
+
+  createdAt DateTime @default(now())
+
+  investment Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+
+  @@unique([investmentId, valuationDate])
+  @@index([investmentId])
+  @@index([valuationDate])
+}
+
+// =============================================================================
+// SAVINGS GOALS (Mục tiêu tiết kiệm)
+// =============================================================================
+
+model SavingsGoal {
+  id       String @id @default(cuid())
+  familyId String
+
+  name          String
+  targetAmount  Decimal  @db.Decimal(18, 2)
+  currentAmount Decimal  @default(0) @db.Decimal(18, 2)
+  currency      String   @default("VND")
+
+  targetDate DateTime?
+  icon       String?
+  color      String?
+
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  family        Family               @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  contributions SavingsContribution[]
+
+  @@index([familyId])
+  @@index([isCompleted])
+}
+
+model SavingsContribution {
+  id     String @id @default(cuid())
+  goalId String
+
+  amount           Decimal  @db.Decimal(18, 2)
+  contributionDate DateTime
+  notes            String?
+  createdAt        DateTime @default(now())
+
+  goal         SavingsGoal  @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([goalId])
+  @@index([contributionDate])
+}
+
+// =============================================================================
+// NET WORTH TRACKING (Theo dõi tài sản ròng)
+// =============================================================================
+
+model NetWorthSnapshot {
+  id       String @id @default(cuid())
+  familyId String
+
+  // Tài sản
+  cashAssets       Decimal @db.Decimal(18, 2)  // Tiền mặt + tài khoản ngân hàng
+  investmentAssets Decimal @db.Decimal(18, 2)  // Danh mục đầu tư
+  otherAssets      Decimal @db.Decimal(18, 2)  // BĐS và tài sản khác
+  totalAssets      Decimal @db.Decimal(18, 2)
+
+  // Nợ
+  creditCardDebt Decimal @db.Decimal(18, 2)
+  loanDebt       Decimal @db.Decimal(18, 2)
+  totalLiabilities Decimal @db.Decimal(18, 2)
+
+  // Tổng hợp
+  netWorth     Decimal  @db.Decimal(18, 2)
+  monthlyIncome  Decimal? @db.Decimal(18, 2)
+  monthlyExpense Decimal? @db.Decimal(18, 2)
+  cashFlow       Decimal? @db.Decimal(18, 2)  // Thu - Chi
+  savingsRate    Decimal? @db.Decimal(5, 4)   // cashFlow / income
+
+  snapshotDate DateTime  // Thường là ngày cuối tháng
+  breakdown    Json?     // Chi tiết từng tài khoản
+
+  createdAt DateTime @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, snapshotDate])
+  @@index([familyId])
+  @@index([snapshotDate])
+}
+
+// =============================================================================
+// FINANCIAL HEALTH SCORE (Điểm sức khỏe tài chính)
+// =============================================================================
+
+model FinancialHealthScore {
+  id       String @id @default(cuid())
+  familyId String
+
+  // Điểm tổng 0-100
+  overallScore Int
+
+  // Điểm thành phần 0-100
+  savingsScore    Int  // Tỷ lệ tiết kiệm
+  debtScore       Int  // Gánh nặng nợ
+  budgetScore     Int  // Tuân thủ ngân sách
+  emergencyScore  Int  // Quỹ khẩn cấp (>= 3-6 tháng chi tiêu)
+  investmentScore Int  // Đầu tư dài hạn
+  cashflowScore   Int  // Ổn định dòng tiền
+
+  // Chi tiết tính toán
+  breakdown Json?
+
+  // Trend
+  previousScore Int?
+  scoreDelta    Int?  // Tăng/giảm so với tháng trước
+
+  scoreDate DateTime
+  createdAt DateTime @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, scoreDate])
+  @@index([familyId])
+  @@index([scoreDate])
+}
+
+// =============================================================================
+// TAGS (Nhãn giao dịch)
+// =============================================================================
+
+model Tag {
+  id       String @id @default(cuid())
+  familyId String
+  name     String
+  color    String?
+
+  createdAt DateTime @default(now())
+
+  family          Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  transactionTags TransactionTag[]
+
+  @@unique([familyId, name])
+  @@index([familyId])
+}
+
+model TransactionTag {
+  transactionId String
+  tagId         String
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  tag         Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([transactionId, tagId])
+}
+
+// =============================================================================
+// NOTIFICATIONS (Thông báo)
+// =============================================================================
+
+model Notification {
+  id       String           @id @default(cuid())
+  familyId String
+  userId   String
+
+  type    NotificationType
+  title   String
+  message String
+  isRead  Boolean          @default(false)
+
+  // Metadata liên quan (budgetId, debtId, transactionId...)
+  data      Json?
+  actionUrl String?  // Deep link khi bấm vào thông báo
+
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([userId, isRead])
+}
+
+model NotificationSetting {
+  id      String              @id @default(cuid())
+  userId  String
+  channel NotificationChannel
+  type    NotificationType
+
+  isEnabled Boolean @default(true)
+  // Metadata kênh: { zaloToken: "...", telegramChatId: "..." }
+  metadata  Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, type])
+  @@index([userId])
+}
+
+// =============================================================================
+// OCR RECEIPTS (Hóa đơn AI nhận dạng)
+// =============================================================================
+
+model OcrReceipt {
+  id       String @id @default(cuid())
+  familyId String
+  userId   String
+
+  imageUrl     String
+  thumbnailUrl String?
+
+  status       OcrStatus @default(PENDING)
+  confidence   Decimal?  @db.Decimal(3, 2)  // 0.00 - 1.00
+
+  // Dữ liệu OCR thô và đã xử lý
+  rawOcrData    Json?
+  extractedData Json?  // { merchant, amount, date, items: [...] }
+
+  // Giao dịch được tạo từ OCR này
+  transactionId String?
+
+  errorMessage String?
+  processedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([familyId])
+  @@index([userId])
+  @@index([status])
+}
+
+// =============================================================================
+// BANK IMPORT (Nhập sao kê ngân hàng)
+// =============================================================================
+
+model BankImport {
+  id       String @id @default(cuid())
+  familyId String
+  userId   String
+  accountId String
+
+  fileName     String
+  fileUrl      String
+  fileSize     Int?
+  bankName     String?
+  bankCode     String?   // MBB, VCB, TCB, ACB...
+
+  status          ImportStatus @default(PENDING)
+  totalRecords    Int          @default(0)
+  importedRecords Int          @default(0)
+  duplicateRecords Int         @default(0)
+  failedRecords   Int          @default(0)
+
+  errorMessage String?
+  processedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  family Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id])
+  rows   BankImportRow[]
+
+  @@index([familyId])
+  @@index([userId])
+  @@index([status])
+}
+
+model BankImportRow {
+  id       String @id @default(cuid())
+  importId String
+  rowNumber Int
+
+  rawData    Json              // Dòng CSV gốc
+  parsedData Json?             // Dữ liệu đã normalize
+  status     ImportRowStatus   @default(PENDING)
+  transactionId String?
+
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  import BankImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  @@index([importId])
+  @@index([status])
+}
+
+// =============================================================================
+// PEER COMPARISON (So sánh với gia đình đồng thu nhập)
+// =============================================================================
+
+model PeerComparisonGroup {
+  id     String @id @default(cuid())
+  name   String  // "Thu nhập 20-40tr/tháng, Hà Nội"
+
+  // Phân khúc
+  incomeRangeMin Decimal? @db.Decimal(18, 2)
+  incomeRangeMax Decimal? @db.Decimal(18, 2)
+  city           String?
+  familySize     Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  families         Family[]
+  benchmarks       PeerBenchmark[]
+}
+
+model PeerBenchmark {
+  id      String @id @default(cuid())
+  groupId String
+
+  // Tỷ lệ trung bình của nhóm (ẩn danh)
+  categoryName     String
+  avgPercent       Decimal @db.Decimal(5, 4)   // % thu nhập dành cho danh mục
+  medianPercent    Decimal @db.Decimal(5, 4)
+  p25Percent       Decimal @db.Decimal(5, 4)   // Tứ vị 25%
+  p75Percent       Decimal @db.Decimal(5, 4)   // Tứ vị 75%
+
+  benchmarkDate DateTime
+  sampleSize    Int      // Số gia đình tham gia
+
+  createdAt DateTime @default(now())
+
+  group PeerComparisonGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([benchmarkDate])
+}
+
+// =============================================================================
+// AUDIT LOG (Nhật ký hoạt động)
+// =============================================================================
+
+model AuditLog {
+  id       String @id @default(cuid())
+  familyId String
+  userId   String
+
+  action     String  // CREATE | UPDATE | DELETE | IMPORT | LOGIN
+  entityType String  // Transaction | Account | Budget | Debt...
+  entityId   String
+
+  // Snapshot before/after
+  oldData Json?
+  newData Json?
+
+  // Request metadata
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([familyId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@index([familyId, createdAt])
+}
+
+// =============================================================================
+// EXCHANGE RATES CACHE (Tỷ giá hối đoái)
+// =============================================================================
+
+model ExchangeRate {
+  id       String @id @default(cuid())
+  fromCurrency String
+  toCurrency   String
+  rate         Decimal @db.Decimal(18, 8)
+  source       String  // "VCB", "ECB", "manual"
+  rateDate     DateTime
+
+  createdAt DateTime @default(now())
+
+  @@unique([fromCurrency, toCurrency, rateDate])
+  @@index([fromCurrency, toCurrency])
+  @@index([rateDate])
+}

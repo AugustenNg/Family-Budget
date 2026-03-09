@@ -1,0 +1,130 @@
+# 💎 Master Document: Dự án Web App Quản lý Tài chính Gia đình (CFO App)
+*Phiên bản: 1.0 (Bản Tích Hợp Cuối Cùng)*
+
+Tài liệu này là bản đặc tả toàn cảnh và chi tiết nhất của dự án **CFO Family Finance App** – một ứng dụng quản trị dòng tiền chuyên nghiệp dành cho gia đình. Tài liệu này đóng vai trò là "Single Source of Truth", định hướng cho toàn bộ vòng đời thiết kế và phát triển mã nguồn.
+
+---
+
+## 🎯 Phần 1: TỔNG QUAN DỰ ÁN (Executive Summary)
+
+*   **Mục tiêu cốt lõi:** Quản lý toàn diện vòng đời của dòng tiền gia đình (Thu nhập -> Chi tiêu -> Trả nợ -> Đầu tư -> Tích lũy tài sản).
+*   **Điểm khác biệt (USP):**
+    *   **Trung tâm phân tích (Control Center):** Không chỉ liệt kê số dư khô khan mà tập trung đánh giá "sức khỏe dòng tiền" qua các widget trực quan.
+    *   **Bảo vệ gia đình:** Family Workspace cho phép các thành viên cộng tác theo thời gian thực với phân quyền rõ ràng. Hệ thống bảo mật nâng cao chống nhìn trộm dữ liệu.
+    *   **Cơ chế dòng tiền thực:** Tách biệt Tài khoản Tiền mặt (ATM/Assets) và Thẻ tín dụng (Liabilities). Giao dịch qua thẻ tín dụng sẽ được hạch toán vào "Chi phí chờ thanh toán".
+
+---
+
+## 🎨 Phần 2: HỆ THỐNG THIẾT KẾ ĐẶC TRƯNG (Design System & UI/UX)
+
+Để làm ứng dụng tài chính trở nên cuốn hút và không bị nhàm chán, chúng ta sẽ áp dụng phong cách thiết kế **Apple-like Fintech** (Sang trọng, dữ liệu trực quan, mang lại cảm giác của ứng dụng Native).
+
+### 2.1. Ngôn ngữ Thiết kế (Visual Language)
+*   **Chủ đề màu sắc (Color Theme - Dark Mode First):** Mặc định sử dụng nền tối cho sự chuyên nghiệp, giảm chói mắt.
+    *   **Nền (Background):** Đen nhánh (`slate-950`) kết hợp thẻ (Card) viền siêu mỏng (`border-white/10`).
+    *   **Accent Color (Thịnh vượng):** Xanh lục Neon (`#10b981`) dành cho Tăng trưởng, Thu nhập, Mục tiêu đạt được.
+    *   **Accent Color (Báo động):** Đỏ Đào (`#ef4444`) dành cho các khoản Nợ, Cảnh báo vượt Ngân sách.
+    *   **Primary Action (Nút bấm):** Xanh Tím (`#6366f1` / Indigo) – cảm giác tin cậy.
+*   **Typography:** Dùng `Inter` cho text thường và `Roboto Mono` cho các con số (định dạng tabular nums) giúp chữ số không nhảy múa khi biến động.
+
+### 2.2. Bố cục Đặc trưng (Bento-box UI & Signature Components)
+1.  **Giao diện Bento-box:** Dashboard được chia thành các khối (widget) vuông vức, bo góc chặt chẽ, hiển thị nội dung phân cấp từ Ngắn hạn đến Dài hạn.
+2.  **Widget "Nhịp đập Dòng tiền" (Heartbeat Pulse):** Là một vòng tròn nằm trung tâm Dashboard hiển thị điểm số tích lũy tháng. Khi ngân sách khỏe mạnh, vòng tròn lan tỏa hiệu ứng "nhịp tim".
+3.  **Thẻ Đảo Ngược (Flip Cards) cho Tài khoản:** Thay vì dạng List dài dòng, ví và thẻ tín dụng hiển thị ngầu như chiếc thẻ thật. Vuốt/Chạm vào sẽ xoay ngược thẻ 180 độ để xem hạn mức và ngày đến hạn sao kê.
+4.  **Thanh Ngân sách Trọng lực (Gravity Progress Bars):** Khi tiêu tiền, vạch đỏ sẽ "ăn" dần từ cạnh phải của thanh màu xanh, kết hợp chớp đỏ khi mức sử dụng vượt 90%.
+5.  **Chế độ Mờ Ẩn Danh (Incognito Blur):** Nút mắt bật/tắt ở góc màn hình, áp dụng hiệu ứng Glassmorphism (kính mờ) nhòe toàn bộ con số khi bạn đang ngồi trong quán cà phê.
+
+---
+
+## 💎 Phần 3: CÁC NHÓM TÍNH NĂNG CHI TIẾT (Features Directory)
+
+### 3.1. Nhóm Tính năng Nền tảng (Core Engine)
+1.  **Sổ Quỹ Cộng tác Gia Đình (Family Space):**
+    *   Vợ/Chồng cùng truy cập trên 1 sổ. Cập nhật số dư realtime (Real-time Sync). Phân quyền tài khoản giới hạn cho con cái.
+2.  **Quản trị Tài khoản Đầu vào (ATM) & Đầu ra (Thẻ Tín Dụng):**
+    *   Setup quỹ lương thực có (ATM) và quỹ tín dụng. Hạch toán chặt chẽ lãi thẻ tín dụng và ngày đến hạn nhằm tránh nợ xấu.
+3.  **Ngân sách Zero-based (Budgeting & Alerts):**
+    *   Chỉ định trước mọi đồng tiền vào các danh mục đầu tháng. Hệ thống đẩy cảnh báo khẩn nếu tiêu lẹm ngân sách.
+4.  **Nhập liệu Thông minh:**
+    *   Nhập giao dịch với tùy chọn Gắn Thẻ (Tagging) dự án cụ thể (Ví dụ: `#DuLichHe2026`).
+
+### 3.2. Nhóm Phân tích Tính Dài hạn (Advanced Analytics)
+1.  **Dashboard Đa Tầng:**
+    *   Ngắn hạn: Thuật toán so sánh Thu/Chi.
+    *   Trung hạn: Quản trị thanh khoản, dự đoán nếu bạn "sắp tiêu hết tiền tuần tới".
+    *   Dài hạn: Biểu đồ Dự phóng Tài sản Ròng (Net Worth Projection) - Vẽ đường thẳng thời gian trong 1-5 năm xem khối tài sản gia đình thay đổi ra sao.
+2.  **Phá băng Nợ (Debt Management):** Thiết lập hợp đồng vay (nhà, xe). Robot gợi ý chiến lược tất toán nợ (Snowball/Avalanche).
+3.  **Hồ sơ Đầu tư (Wealth Portfolio):** Quản lý lãi suất từ cổ phiếu, tiền tiết kiệm.
+4.  **Chấm điểm ngang hàng (Peer Comparison):** So sánh cơ cấu tiêu dùng của nhà bạn với các gia đình đồng thu nhập để điều chỉnh kịp thời.
+
+### 3.3. Nhóm Tự động hóa PRO (Automation & Security)
+1.  **Biên lai AI (OCR):** Chụp ảnh hóa đơn nhà hàng, AI tự bóc tách con số và tên hàng hóa đổ vào hóa đơn.
+2.  **Nhập liệu số lượng lớn (Bank Sync/Import):** Quét file CSV sao kê từ ngân hàng vào app cuối tháng để đổi soát sổ sách.
+3.  **Offline-first (PWA):** Cài App trực tiếp trên điện thoại, có thể nhập giao dịch offline (bước vào thang máy) và tự động đồng bộ khi có 4G.
+
+---
+
+## 📐 Phần 4: KIẾN TRÚC HỆ THỐNG & CẤU TRÚC THƯ MỤC (Tech Architecture)
+
+Hệ thống được thiết kế theo cấu trúc Feature-driven (phân theo nghiệp vụ) trên nền tảng Next.js để sẵn sàng mở rộng siêu tốc, bảo mật cao và nhẹ mượt.
+
+### 4.1. Công nghệ Khuyên Dùng (Tech Stack)
+*   **Cốt lõi:** `Next.js 14+` (App Router) + `TypeScript`.
+*   **Giao diện:** `Tailwind CSS` + `Shadcn/UI` + Bảng biểu của `Recharts`.
+*   **Lưu trữ Data:** `PostgreSQL` qua nhà cung cấp Supabase (Quản lý Database). Tương tác qua `Prisma ORM`.
+*   **Quản trị Tình trạng Đồng bộ (State Management):** Dùng `Zustand` kết hợp React Query để giao dịch bên này thêm bên kia nhảy số tức thì.
+*   **Bảo mật & Auth:** `NextAuth.js`. Quản trị phiên và sinh trắc học.
+
+### 4.2. Sơ đồ Thư mục Vật lý (Directory Blueprint)
+Toàn bộ mã nguồn thuộc thư mục `src/` sẽ được chia vách ngăn phân quyền logic rõ ràng:
+
+```text
+/
+├── prisma/                    # Định hình bảo mật CSDL (DB Schema - User, Transactions)
+├── src/
+│   ├── app/                   # Chỉ chứa Routing đường đi ứng dụng (Routes, Layouts)
+│   │   ├── (dashboard)/       # Layout chung Dark Mode bọc toàn app
+│   │   │   ├── page.tsx       # Màn hình Trung tâm (Bento-box Widgets)
+│   │   │   ├── transactions/  # Quản lý Sổ quỹ
+│   │   │   ├── budget/        # Setup Ngân sách
+│   │   │   └── wealth/        # Nghiệp vụ Nợ & Đầu tư
+│   │   └── api/               # Tiếp nhận Yêu cầu Dữ liệu Backend (RESTful)
+│   │
+│   ├── components/            # Hệ Thống Đặc Trưng & Thành Phần
+│   │   ├── ui/                # Component Gốc (Input box, Thẻ cứng)
+│   │   └── bento/             # Chứa UI Đỉnh cao: Heartbeat Pulse, Flip Crads, Gravity Bar
+│   │
+│   ├── features/              # Kho chứa Nghiệp Vụ Tài Chính Chuyên Nhiệm (The Brains)
+│   │   ├── cashflow/          # Tệp thuật toán phân loại điểm sức khỏe dòng tiền
+│   │   ├── credit/            # Tệp tính toán vòng đời thẻ tín dụng 45 ngày miễn lãi
+│   │   └── debt/              # Tệp tính dư nợ giảm dần dựa trên Lãi suất
+│   │
+│   ├── store/                 # Kết nối Vợ, Chồng, Con (Zustand Global State)
+│   └── lib/                   # Kho Cờ Lê, Tô Vít (Hàm format VND, ngày tháng chung)
+```
+
+---
+
+## 🚀 Phần 5: LỘ TRÌNH THỰC THI (Execution Roadmap)
+
+Được chia Agile thành 3 Cột Mốc (Phases). Đưa sản phẩm vào tiêu xài thực tế càng sớm càng tốt để nghiệm thu từ gia đình.
+
+*   **PHASE 1: Xây Dựng Bản Vè Giao Diện & Bộ Máy Core Lõi (Tháng 1)**
+    *   Tạo khung xương Next.js + TailwindCSS + Shadcn/UI.
+    *   Thiết kế giao diện Dark Mode toàn ứng dụng.
+    *   Code màn hình Dashboard tĩnh với đầy đủ hiệu ứng Bento-box (Heartbeat, Flip Cards). *Mục tiêu: Đẹp, WOW, ưng mắt hoàn toàn.*
+    *   Làm DB (Prisma + Supabase) kết nối ví tiền (ATM) và ghi nhận giao dịch cơ bản.
+
+*   **PHASE 2: Phát triển Không Gian Gia Đình & Quản trị Tương Lai (Tháng 2)**
+    *   Deploy tính năng Setup Ngân sách (Budgeting).
+    *   Mời User Vợ/Chồng vào Family Workspace. Phân quyền hiển thị.
+    *   Đổ máu não cho logic Quản lý Tín Dụng, Quản lý Rủi Ro Nợ.
+    *   Thắp sáng Biểu đồ Tầm nhìn 10 năm.
+
+*   **PHASE 3: Hoàn Chỉnh Tiện Ích Thông Minh (Tháng 3 & Beyond)**
+    *   Tích hợp AI OCR nhận diện ảnh hóa đơn.
+    *   Hỗ trợ PWA Cài máy không dính wifi.
+    *   Nhập file Excel sao kê ngân hàng đổ đống vào hệ thống. Cảnh báo tự động báo qua Zalo/Telegram.
+
+---
+*(Hết tài liệu)*

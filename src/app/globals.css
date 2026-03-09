@@ -1,0 +1,284 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================ */
+/* ROOT VARIABLES */
+/* ============================================================ */
+:root {
+  --bg-base: #020617;          /* slate-950 */
+  --bg-card: rgba(255,255,255,0.04);
+  --bg-card-hover: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.08);
+  --border-hover: rgba(255,255,255,0.15);
+  --text-primary: #f8fafc;     /* slate-50 */
+  --text-secondary: #94a3b8;   /* slate-400 */
+  --text-muted: #475569;       /* slate-600 */
+  --emerald: #10b981;
+  --emerald-dim: rgba(16,185,129,0.15);
+  --indigo: #6366f1;
+  --indigo-dim: rgba(99,102,241,0.15);
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.15);
+  --amber: #f59e0b;
+  --sidebar-width: 240px;
+}
+
+/* ============================================================ */
+/* BASE STYLES */
+/* ============================================================ */
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Number font */
+.font-num {
+  font-family: 'Roboto Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================ */
+/* CARD COMPONENT */
+/* ============================================================ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.card:hover { border-color: var(--border-hover); }
+.card-glass {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+/* ============================================================ */
+/* FLIP CARD */
+/* ============================================================ */
+.flip-card { perspective: 1200px; }
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.flip-card:hover .flip-card-inner,
+.flip-card-inner.flipped { transform: rotateY(180deg); }
+.flip-card-front, .flip-card-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+.flip-card-back { transform: rotateY(180deg); }
+
+/* ============================================================ */
+/* HEARTBEAT PULSE */
+/* ============================================================ */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.12); opacity: 0.15; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
+@keyframes pulse-ring-2 {
+  0% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.2); opacity: 0.08; }
+  100% { transform: scale(1); opacity: 0.4; }
+}
+.pulse-ring-1 { animation: pulse-ring 2.5s ease-in-out infinite; }
+.pulse-ring-2 { animation: pulse-ring-2 2.5s ease-in-out 0.5s infinite; }
+
+/* ============================================================ */
+/* GRAVITY PROGRESS BAR */
+/* ============================================================ */
+.gravity-bar-track {
+  position: relative;
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.gravity-bar-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: 9999px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.gravity-bar-danger {
+  animation: flicker 1s ease-in-out infinite alternate;
+}
+@keyframes flicker {
+  from { opacity: 1; }
+  to { opacity: 0.7; box-shadow: 0 0 8px rgba(239,68,68,0.8); }
+}
+
+/* ============================================================ */
+/* INCOGNITO BLUR */
+/* ============================================================ */
+.incognito-mode .blur-sensitive {
+  filter: blur(10px);
+  pointer-events: none;
+  user-select: none;
+  transition: filter 0.3s;
+}
+.blur-sensitive { transition: filter 0.3s; }
+
+/* ============================================================ */
+/* ANIMATIONS */
+/* ============================================================ */
+@keyframes slide-up {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.animate-slide-up { animation: slide-up 0.35s ease-out; }
+.animate-fade-in { animation: fade-in 0.25s ease-out; }
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ============================================================ */
+/* MODAL OVERLAY */
+/* ============================================================ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(2,6,23,0.85);
+  backdrop-filter: blur(6px);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fade-in 0.2s ease-out;
+}
+@media (min-width: 640px) {
+  .modal-overlay { align-items: center; }
+}
+.modal-content {
+  width: 100%;
+  max-width: 480px;
+  animation: slide-up 0.3s ease-out;
+}
+
+/* ============================================================ */
+/* SIDEBAR */
+/* ============================================================ */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+}
+.sidebar-item:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+.sidebar-item.active {
+  background: var(--indigo-dim);
+  color: #a5b4fc;
+  border: 1px solid rgba(99,102,241,0.2);
+}
+.sidebar-item.active svg { color: var(--indigo); }
+
+/* ============================================================ */
+/* INPUT STYLES */
+/* ============================================================ */
+.input-field {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.input-field::placeholder { color: var(--text-muted); }
+.input-field:focus {
+  border-color: var(--indigo);
+  background: rgba(99,102,241,0.08);
+}
+
+.select-field {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+}
+.select-field option { background: #0f172a; color: #f8fafc; }
+.select-field:focus { border-color: var(--indigo); }
+
+/* ============================================================ */
+/* BADGE COLORS */
+/* ============================================================ */
+.badge-income {
+  background: var(--emerald-dim);
+  color: #6ee7b7;
+  border: 1px solid rgba(16,185,129,0.25);
+}
+.badge-expense {
+  background: var(--red-dim);
+  color: #fca5a5;
+  border: 1px solid rgba(239,68,68,0.25);
+}
+.badge-transfer {
+  background: var(--indigo-dim);
+  color: #a5b4fc;
+  border: 1px solid rgba(99,102,241,0.25);
+}
+
+/* Amount colors */
+.text-income { color: #34d399; }
+.text-expense { color: #f87171; }
+.text-transfer { color: #818cf8; }
+
+/* ============================================================ */
+/* CHART OVERRIDES */
+/* ============================================================ */
+.recharts-cartesian-axis-tick-value { fill: #64748b !important; font-size: 11px; }
+.recharts-tooltip-wrapper { outline: none !important; }
