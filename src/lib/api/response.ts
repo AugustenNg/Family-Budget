@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
+import { AppError } from '@/server/errors/app-error'
 
 export interface ApiSuccess<T> {
   success: true
@@ -109,6 +110,17 @@ export function serverError(error?: unknown): NextResponse<ApiError> {
 // -----------------------------------------------------------------------------
 
 export function handleApiError(error: unknown): NextResponse<ApiError> {
+  // AppError — structured application errors
+  if (error instanceof AppError) {
+    return NextResponse.json(
+      {
+        success: false as const,
+        error: { code: error.code, message: error.message, details: error.details },
+      },
+      { status: error.statusCode },
+    )
+  }
+
   if (error instanceof ZodError) {
     return unprocessable('Dữ liệu không hợp lệ', error.flatten())
   }
