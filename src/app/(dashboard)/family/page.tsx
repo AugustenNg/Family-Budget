@@ -6,6 +6,11 @@ import { useAppStore } from '@/lib/store'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
+import { useIsApiMode } from '@/hooks/use-data-source'
+import { useTransactions as useApiTransactions } from '@/hooks/queries/use-transactions'
+import { useAccounts as useApiAccounts } from '@/hooks/queries/use-accounts'
+import { useBudgets as useApiBudgets } from '@/hooks/queries/use-budgets'
+import { useSummary as useApiSummary } from '@/hooks/queries/use-summary'
 
 // ---- Mock family members (Phase 1: client-side)
 // In Phase 2, this will come from Supabase family/members tables
@@ -42,10 +47,22 @@ const SHARED_BUDGETS = [
 ]
 
 export default function FamilyPage() {
-  const accounts = useAppStore(s => s.accounts)
-  const transactions = useAppStore(s => s.transactions)
-  const budgets = useAppStore(s => s.budgets)
-  const summary = useAppStore(s => s.getSummary())
+  const isApi = useIsApiMode()
+
+  const apiTx = useApiTransactions({})
+  const apiAccounts = useApiAccounts()
+  const apiBudgets = useApiBudgets()
+  const apiSummary = useApiSummary()
+
+  const storeAccounts = useAppStore(s => s.accounts)
+  const storeTx = useAppStore(s => s.transactions)
+  const storeBudgets = useAppStore(s => s.budgets)
+  const storeSummary = useAppStore(s => s.getSummary())
+
+  const accounts = isApi && apiAccounts.data ? apiAccounts.data as any[] : storeAccounts
+  const transactions = isApi && apiTx.data ? apiTx.data.data as any[] : storeTx
+  const budgets = isApi && apiBudgets.data ? apiBudgets.data as any[] : storeBudgets
+  const summary = isApi && apiSummary.data ? apiSummary.data as any : storeSummary
   const [showAddMember, setShowAddMember] = useState(false)
   const [selectedMember, setSelectedMember] = useState<(typeof FAMILY_MEMBERS)[0] | null>(null)
 

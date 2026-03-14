@@ -5,12 +5,23 @@ import { Topbar } from '@/components/layout/Topbar'
 import { GravityProgressBar } from '@/components/bento/GravityProgressBar'
 import { useAppStore, BUDGET_CATEGORIES } from '@/lib/store'
 import { type Budget } from '@/lib/mock-data'
+import { useIsApiMode } from '@/hooks/use-data-source'
+import { useBudgets as useApiBudgets } from '@/hooks/queries/use-budgets'
+import { useSummary as useApiSummary } from '@/hooks/queries/use-summary'
 
 const MONTHS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12']
 
 export default function BudgetPage() {
-  const budgets = useAppStore(s => s.budgets)
-  const summary = useAppStore(s => s.getSummary())
+  const isApi = useIsApiMode()
+
+  const apiBudgets = useApiBudgets()
+  const apiSummary = useApiSummary()
+
+  const storeBudgets = useAppStore(s => s.budgets)
+  const storeSummary = useAppStore(s => s.getSummary())
+
+  const budgets = isApi && apiBudgets.data ? apiBudgets.data as any[] : storeBudgets
+  const summary = isApi && apiSummary.data ? apiSummary.data as any : storeSummary
 
   const [activeMonth, setActiveMonth] = useState(2) // March (0-indexed)
   const [showAddModal, setShowAddModal] = useState(false)

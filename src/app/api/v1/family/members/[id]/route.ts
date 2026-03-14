@@ -3,7 +3,7 @@
 // PATCH /api/v1/family/members/:id — Change role (OWNER only)
 // =============================================================================
 
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { withFamily } from '@/server/middleware/with-family'
 import { requireRole } from '@/server/middleware/with-role'
 import { FamilyService } from '@/server/services/family.service'
@@ -15,11 +15,11 @@ const updateRoleSchema = z.object({
     role: z.enum(['ADMIN', 'MEMBER', 'CHILD']),
 })
 
-function withParams(handler: (req: NextRequest, ctx: FamilyContext, id: string) => Promise<Response>) {
+function withParams(handler: (req: NextRequest, ctx: FamilyContext, id: string) => Promise<NextResponse>) {
     return (req: NextRequest, routeParams: RouteParams) => {
         return withFamily(async (request, ctx) => {
             const { id } = await routeParams.params
-            return handler(request, ctx, id) as Promise<Response & { [key: string]: unknown }>
+            return handler(request, ctx, id)
         })(req)
     }
 }

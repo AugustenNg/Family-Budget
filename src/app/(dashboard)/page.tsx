@@ -8,6 +8,11 @@ import { Topbar } from '@/components/layout/Topbar'
 import { useAppStore } from '@/lib/store'
 import { mockNetWorthHistory } from '@/lib/mock-data'
 import { AddTransactionModal } from '@/components/modals/AddTransactionModal'
+import { useIsApiMode } from '@/hooks/use-data-source'
+import { useTransactions } from '@/hooks/queries/use-transactions'
+import { useAccounts } from '@/hooks/queries/use-accounts'
+import { useBudgets } from '@/hooks/queries/use-budgets'
+import { useSummary } from '@/hooks/queries/use-summary'
 
 // Recharts
 import {
@@ -15,10 +20,25 @@ import {
 } from 'recharts'
 
 export default function DashboardPage() {
-  const transactions = useAppStore(s => s.transactions)
-  const accounts = useAppStore(s => s.accounts)
-  const budgets = useAppStore(s => s.budgets)
-  const summary = useAppStore(s => s.getSummary())
+  const isApi = useIsApiMode()
+
+  // API data sources (only fetched when authenticated)
+  const apiTransactions = useTransactions({})
+  const apiAccounts = useAccounts()
+  const apiBudgets = useBudgets()
+  const apiSummary = useSummary()
+
+  // Zustand data sources (fallback for demo mode)
+  const storeTransactions = useAppStore(s => s.transactions)
+  const storeAccounts = useAppStore(s => s.accounts)
+  const storeBudgets = useAppStore(s => s.budgets)
+  const storeSummary = useAppStore(s => s.getSummary())
+
+  // Use API data when authenticated, otherwise Zustand
+  const transactions = isApi && apiTransactions.data ? apiTransactions.data.data as any[] : storeTransactions
+  const accounts = isApi && apiAccounts.data ? apiAccounts.data as any[] : storeAccounts
+  const budgets = isApi && apiBudgets.data ? apiBudgets.data as any[] : storeBudgets
+  const summary = isApi && apiSummary.data ? apiSummary.data as any : storeSummary
 
   const [showAddTx, setShowAddTx] = useState(false)
 

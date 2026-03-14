@@ -20,14 +20,14 @@ export class NotificationService {
     static async markAsRead(id: string, userId: string) {
         return prisma.notification.updateMany({
             where: { id, userId },
-            data: { isRead: true, readAt: new Date() },
+            data: { isRead: true },
         })
     }
 
     static async markAllAsRead(familyId: string, userId: string) {
         return prisma.notification.updateMany({
             where: { familyId, userId, isRead: false },
-            data: { isRead: true, readAt: new Date() },
+            data: { isRead: true },
         })
     }
 

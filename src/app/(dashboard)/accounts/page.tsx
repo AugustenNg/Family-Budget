@@ -6,9 +6,15 @@ import { FlipCard } from '@/components/bento/FlipCard'
 import { useAppStore } from '@/lib/store'
 import { type Account } from '@/lib/mock-data'
 import { AddTransactionModal } from '@/components/modals/AddTransactionModal'
+import { useIsApiMode } from '@/hooks/use-data-source'
+import { useAccounts as useApiAccounts } from '@/hooks/queries/use-accounts'
+import { useTransactions as useApiTransactions } from '@/hooks/queries/use-transactions'
 
 export default function AccountsPage() {
-  const accounts = useAppStore(s => s.accounts)
+  const isApi = useIsApiMode()
+  const apiAccounts = useApiAccounts()
+  const storeAccounts = useAppStore(s => s.accounts)
+  const accounts = isApi && apiAccounts.data ? apiAccounts.data as any[] : storeAccounts
   const [showAdd, setShowAdd] = useState(false)
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
 

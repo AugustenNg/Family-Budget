@@ -25,7 +25,7 @@ export const POST = withFamily(async (req, ctx) => {
         const roleCheck = requireRole('MEMBER')(ctx)
         if (roleCheck) return roleCheck
         const body = await validateBody(req, createGoalSchema)
-        const result = await GoalService.create(ctx.familyId, body)
+        const result = await GoalService.create(ctx.familyId, body as any)
         return created(result)
     } catch (error) {
         return handleApiError(error)

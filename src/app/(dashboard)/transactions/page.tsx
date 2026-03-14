@@ -6,6 +6,9 @@ import { useAppStore, ALL_CATEGORIES } from '@/lib/store'
 import { type Transaction } from '@/lib/mock-data'
 import { AddTransactionModal } from '@/components/modals/AddTransactionModal'
 import { Portal } from '@/components/Portal'
+import { useIsApiMode } from '@/hooks/use-data-source'
+import { useTransactions as useApiTransactions, useDeleteTransaction as useApiDeleteTransaction, useUpdateTransaction as useApiUpdateTransaction } from '@/hooks/queries/use-transactions'
+import { useAccounts as useApiAccounts } from '@/hooks/queries/use-accounts'
 
 const TX_TYPES = [
   { value: 'ALL', label: 'Tất cả' },
@@ -15,8 +18,18 @@ const TX_TYPES = [
 ]
 
 export default function TransactionsPage() {
-  const transactions = useAppStore(s => s.transactions)
-  const accounts = useAppStore(s => s.accounts)
+  const isApi = useIsApiMode()
+
+  // API data
+  const apiTx = useApiTransactions({})
+  const apiAccounts = useApiAccounts()
+
+  // Zustand fallback
+  const storeTx = useAppStore(s => s.transactions)
+  const storeAccounts = useAppStore(s => s.accounts)
+
+  const transactions = isApi && apiTx.data ? apiTx.data.data as any[] : storeTx
+  const accounts = isApi && apiAccounts.data ? apiAccounts.data as any[] : storeAccounts
 
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('ALL')

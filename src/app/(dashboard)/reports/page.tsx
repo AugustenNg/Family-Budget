@@ -7,14 +7,31 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, AreaChart, Area,
 } from 'recharts'
+import { useIsApiMode } from '@/hooks/use-data-source'
+import { useTransactions as useApiTransactions } from '@/hooks/queries/use-transactions'
+import { useAccounts as useApiAccounts } from '@/hooks/queries/use-accounts'
+import { useBudgets as useApiBudgets } from '@/hooks/queries/use-budgets'
+import { useSummary as useApiSummary } from '@/hooks/queries/use-summary'
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#94a3b8']
 
 export default function ReportsPage() {
-  const transactions = useAppStore(s => s.transactions)
-  const budgets = useAppStore(s => s.budgets)
-  const accounts = useAppStore(s => s.accounts)
-  const summary = useAppStore(s => s.getSummary())
+  const isApi = useIsApiMode()
+
+  const apiTx = useApiTransactions({})
+  const apiAccounts = useApiAccounts()
+  const apiBudgets = useApiBudgets()
+  const apiSummary = useApiSummary()
+
+  const storeTx = useAppStore(s => s.transactions)
+  const storeAccounts = useAppStore(s => s.accounts)
+  const storeBudgets = useAppStore(s => s.budgets)
+  const storeSummary = useAppStore(s => s.getSummary())
+
+  const transactions = isApi && apiTx.data ? apiTx.data.data as any[] : storeTx
+  const budgets = isApi && apiBudgets.data ? apiBudgets.data as any[] : storeBudgets
+  const accounts = isApi && apiAccounts.data ? apiAccounts.data as any[] : storeAccounts
+  const summary = isApi && apiSummary.data ? apiSummary.data as any : storeSummary
 
   // ---- Compute monthly data (last 6 months) ----
   const monthlyData = useMemo(() => {

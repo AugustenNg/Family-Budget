@@ -25,7 +25,7 @@ export const POST = withFamily(async (req, ctx) => {
         const roleCheck = requireRole('ADMIN')(ctx)
         if (roleCheck) return roleCheck
         const body = await validateBody(req, createBudgetSchema)
-        const result = await BudgetService.create(ctx.familyId, body)
+        const result = await BudgetService.create(ctx.familyId, body as any)
         return created(result)
     } catch (error) {
         return handleApiError(error)

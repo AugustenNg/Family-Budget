@@ -4,11 +4,17 @@ import { useState } from 'react'
 import { Topbar } from '@/components/layout/Topbar'
 import { useAppStore, type Goal } from '@/lib/store'
 import { calculateAmortization } from '@/features/debt/amortization'
+import { useIsApiMode } from '@/hooks/use-data-source'
+import { useDebts as useApiDebts, useInvestments as useApiInvestments, useGoals as useApiGoals } from '@/hooks/queries/use-budgets'
+import { useSummary as useApiSummary } from '@/hooks/queries/use-summary'
 
 type Tab = 'debt' | 'investment' | 'goals'
 
 export default function WealthPage() {
-  const summary = useAppStore(s => s.getSummary())
+  const isApi = useIsApiMode()
+  const apiSummary = useApiSummary()
+  const storeSummary = useAppStore(s => s.getSummary())
+  const summary = isApi && apiSummary.data ? apiSummary.data as any : storeSummary
   const [tab, setTab] = useState<Tab>('debt')
 
   const tabs: { key: Tab; label: string; icon: string }[] = [

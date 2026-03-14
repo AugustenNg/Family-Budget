@@ -15,10 +15,9 @@ export class RecurringService {
         return prisma.recurringTransaction.findMany({
             where: { familyId, isActive: true },
             include: {
-                sourceAccount: { select: { id: true, name: true, type: true } },
                 category: { select: { id: true, name: true, icon: true } },
             },
-            orderBy: { nextOccurrence: 'asc' },
+            orderBy: { nextDate: 'asc' },
         })
     }
 
@@ -57,7 +56,7 @@ export class RecurringService {
                 frequency: input.frequency,
                 startDate: input.startDate,
                 endDate: input.endDate,
-                nextOccurrence: input.startDate,
+                nextDate: input.startDate,
                 isActive: true,
             },
         })
@@ -72,7 +71,7 @@ export class RecurringService {
         const dueRules = await prisma.recurringTransaction.findMany({
             where: {
                 isActive: true,
-                nextOccurrence: { lte: now },
+                nextDate: { lte: now },
                 OR: [{ endDate: null }, { endDate: { gte: now } }],
             },
         })
@@ -109,7 +108,7 @@ export class RecurringService {
 
                     // 3. Calculate next occurrence
                     const nextDate = RecurringService.calculateNextDate(
-                        rule.nextOccurrence!,
+                        rule.nextDate,
                         rule.frequency,
                     )
 
@@ -119,8 +118,7 @@ export class RecurringService {
                     await tx.recurringTransaction.update({
                         where: { id: rule.id },
                         data: {
-                            nextOccurrence: nextDate,
-                            lastProcessed: now,
+                            nextDate: nextDate,
                             ...(shouldDeactivate && { isActive: false }),
                         },
                     })

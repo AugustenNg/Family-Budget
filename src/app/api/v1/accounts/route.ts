@@ -29,7 +29,7 @@ export const POST = withFamily(async (req, ctx) => {
         if (roleCheck) return roleCheck
 
         const body = await validateBody(req, createAccountSchema)
-        const result = await AccountService.create(ctx.familyId, body)
+        const result = await AccountService.create(ctx.familyId, body as any)
         return created(result)
     } catch (error) {
         return handleApiError(error)

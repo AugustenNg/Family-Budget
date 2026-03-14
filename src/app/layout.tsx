@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next'
+import { AuthProvider } from '@/providers/auth-provider'
+import { QueryProvider } from '@/providers/query-provider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -18,7 +20,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="vi" className="dark">
       <body className="bg-slate-950 text-slate-50 antialiased">
-        {children}
+        <AuthProvider>
+          <QueryProvider>
+            {children}
+          </QueryProvider>
+        </AuthProvider>
       </body>
     </html>
   )

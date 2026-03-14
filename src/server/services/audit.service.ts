@@ -27,7 +27,7 @@ export class AuditService {
                     action: params.action,
                     entityType: params.entityType,
                     entityId: params.entityId,
-                    details: params.details ?? {},
+                    newData: (params.details ?? {}) as any,
                     ipAddress: null,
                     userAgent: null,
                 },

@@ -16,7 +16,7 @@ export const GET = withFamily(async (req, ctx) => {
         if (roleCheck) return roleCheck
 
         const query = validateQuery(req, listTransactionsSchema)
-        const result = await TransactionService.list(ctx.familyId, query)
+        const result = await TransactionService.list(ctx.familyId, query as any)
         return ok(result.data, result.meta)
     } catch (error) {
         return handleApiError(error)
@@ -30,7 +30,7 @@ export const POST = withFamily(async (req, ctx) => {
         if (roleCheck) return roleCheck
 
         const body = await validateBody(req, createTransactionSchema)
-        const result = await TransactionService.create(ctx.familyId, ctx.userId, body)
+        const result = await TransactionService.create(ctx.familyId, ctx.userId, body as any)
         return created(result)
     } catch (error) {
         return handleApiError(error)
