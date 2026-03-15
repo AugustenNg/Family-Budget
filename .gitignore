@@ -44,3 +44,10 @@ next-env.d.ts
 
 # Claude
 .claude/
+
+# Self-hosted secrets & data
+self-hosted/.env.production
+self-hosted/backups/
+self-hosted/logs/
+self-hosted/data/
+.env.production
