@@ -2,17 +2,44 @@
 
 import { signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 
 function SignInContent() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
   const error = searchParams.get('error')
 
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [loginError, setLoginError] = useState('')
+
+  const handleCredentials = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !password) return
+
+    setLoading(true)
+    setLoginError('')
+
+    const result = await signIn('credentials', {
+      email,
+      password,
+      callbackUrl,
+      redirect: false,
+    })
+
+    if (result?.error) {
+      setLoginError('Email hoac mat khau khong dung')
+      setLoading(false)
+    } else if (result?.url) {
+      window.location.href = result.url
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo & Branding */}
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-indigo-600 mb-4">
             <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -20,29 +47,66 @@ function SignInContent() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-slate-50">CFO Family</h1>
-          <p className="text-slate-400 mt-2">Quản lý Tài chính Gia dinh</p>
+          <p className="text-slate-400 mt-2">Quan ly Tai chinh Gia dinh</p>
         </div>
 
         {/* Card */}
         <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-8">
-          <h2 className="text-xl font-semibold text-slate-50 text-center mb-2">
+          <h2 className="text-xl font-semibold text-slate-50 text-center mb-6">
             Dang nhap
           </h2>
-          <p className="text-slate-400 text-sm text-center mb-6">
-            Su dung tai khoan Google de bat dau
-          </p>
 
-          {error && (
+          {(error || loginError) && (
             <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
-              {error === 'OAuthAccountNotLinked'
-                ? 'Email nay da duoc su dung voi phuong thuc dang nhap khac.'
-                : 'Co loi xay ra. Vui long thu lai.'}
+              {loginError || (error === 'OAuthAccountNotLinked'
+                ? 'Email nay da duoc su dung voi phuong thuc khac.'
+                : 'Co loi xay ra. Vui long thu lai.')}
             </div>
           )}
 
+          {/* Email/Password Form */}
+          <form onSubmit={handleCredentials} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
+                className="w-full px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-slate-50 placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-colors"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Mat khau</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-slate-50 placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-colors"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading || !email || !password}
+              className="w-full px-4 py-2.5 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? 'Dang xu ly...' : 'Dang nhap'}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="flex items-center my-6">
+            <div className="flex-1 border-t border-white/[0.08]" />
+            <span className="px-3 text-xs text-slate-500 uppercase">hoac</span>
+            <div className="flex-1 border-t border-white/[0.08]" />
+          </div>
+
+          {/* Google OAuth */}
           <button
             onClick={() => signIn('google', { callbackUrl })}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white text-slate-900 font-medium hover:bg-slate-100 transition-colors"
+            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-slate-200 font-medium hover:bg-white/[0.1] transition-colors"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -55,14 +119,10 @@ function SignInContent() {
 
           <div className="mt-6 text-center">
             <a href="/" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">
-              Hoac dung thu ban demo (khong can dang nhap)
+              Dung thu ban demo (khong can dang nhap)
             </a>
           </div>
         </div>
-
-        <p className="text-xs text-slate-600 text-center mt-6">
-          Khi dang nhap, ban dong y voi dieu khoan su dung cua CFO Family.
-        </p>
       </div>
     </div>
   )

@@ -5,11 +5,11 @@ module.exports = {
     name: 'cfo-family',
     cwd: '/nas_data/augustNg/File/Family Budget',
     script: 'node_modules/.bin/next',
-    args: 'start -H 127.0.0.1 -p 3000',
+    args: 'start -H 0.0.0.0 -p 3000',
     env: {
       NODE_ENV: 'production',
       PORT: 3000,
-      HOSTNAME: '127.0.0.1',
+      HOSTNAME: '0.0.0.0',
     },
     // Logs
     error_file: '/nas_data/augustNg/File/Family Budget/self-hosted/logs/error.log',

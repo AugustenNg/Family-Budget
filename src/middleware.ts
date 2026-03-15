@@ -44,13 +44,13 @@ export function middleware(request: NextRequest) {
     const cfConnecting = request.headers.get('cf-connecting-ip')
     const cfRay = request.headers.get('cf-ray')
 
-    // If no Cloudflare headers, request is direct (bypass tunnel) — block it
-    // Exception: localhost for health checks
+    // Allow: Cloudflare Tunnel, localhost, or Tailscale IPs
     const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       || request.ip || ''
     const isLocalhost = clientIp === '127.0.0.1' || clientIp === '::1'
+    const isTailscale = clientIp.startsWith('100.') && parseInt(clientIp.split('.')[1], 10) >= 64
 
-    if (!cfConnecting && !cfRay && !isLocalhost) {
+    if (!cfConnecting && !cfRay && !isLocalhost && !isTailscale) {
       return new NextResponse('Forbidden', { status: 403 })
     }
   }

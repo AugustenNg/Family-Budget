@@ -155,8 +155,10 @@ model User {
   currency  String   @default("VND")
 
   // Security
-  pinHash   String?  // 6-digit PIN hash for quick access
+  passwordHash String?  // bcrypt hash for credentials login
+  pinHash      String?  // 6-digit PIN hash for quick access
   isBiometricEnabled Boolean @default(false)
+  isSystemAdmin  Boolean @default(false)  // System-level admin
 
   // External Auth (NextAuth)
   emailVerified DateTime?
